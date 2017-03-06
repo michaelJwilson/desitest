@@ -22,11 +22,11 @@ def update(basedir=None, logdir='.'):
     #- TODO: consider speclite, specsim, and redmonster or redrock
     repos = [
         'desiutil',
-        # 'specter',
+        'specter',
         'desimodel',
-        # 'desitarget',
-        # 'desispec',
-        # 'desisim',
+        'desitarget',
+        'desispec',
+        'desisim',
     ]
 
     for repo in repos:
