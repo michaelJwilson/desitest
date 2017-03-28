@@ -7,8 +7,11 @@ import sys, os
 import subprocess
 import time
 
-def update(basedir=None, logdir='.'):
+def update(basedir=None, logdir='.', repos=None):
     '''TODO: Document'''
+    if basedir is None:
+        basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
+
     if not os.path.exists(basedir):
         raise ValueError("Missing directory {}".format(basedir))
 
@@ -19,16 +22,20 @@ def update(basedir=None, logdir='.'):
     results = dict()
 
     #- repositories to update in order of dependencies
-    #- TODO: consider speclite, specsim, and redmonster or redrock
-    repos = [
-        'desiutil',
-        'specter',
-        'desimodel',
-        'desitarget',
-        'desispec',
-        'desisim',
-    ]
+    #- TODO: consider speclite, and redmonster or redrock
+    if repos is None:
+        repos = [
+            'desiutil',
+            'specter',
+            'desimodel',
+            'desitarget',
+            'desispec',
+            'specsim',
+            'desisim-testdata',
+            'desisim',
+        ]
 
+    something_failed = False
     for repo in repos:
         repo_results = dict()
         repodir = os.path.join(basedir, repo, 'master')
@@ -38,18 +45,36 @@ def update(basedir=None, logdir='.'):
         else:
             os.chdir(repodir)
             repo_results['log'] = ['--- {}'.format(repodir), '']
-            commands = ["git pull", "python setup.py test"]
+            commands = [
+                "git pull",
+                "python -m compileall -f ./py",
+                "python setup.py test",
+            ]
             
-            #- special case for desimodel: also update svn data
+            #- special cases for commands
+
+            #- desimodel: also update svn data
             if repo == 'desimodel':
                 commands = ['svn update data/',] + commands
 
+            #- desisim-testdata: data only, no tests
+            if repo == 'desisim-testdata':
+                commands = ['git pull', ]
+
+            #- desisim: use desisim-testdata to run faster
+            if repo == 'desisim':
+                i = commands.index('python setup.py test')
+                commands[i] = 'module load desisim-testdata && python setup.py test'
+
             for cmd in commands:
-                x = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+                # x = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
+                #         stderr=subprocess.STDOUT, universal_newlines=True)
+                x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, universal_newlines=True)
                 repo_results['log'].extend( ['--- '+cmd, x.stdout] )
                 if x.returncode != 0:
                     repo_results['status'] = 'FAIL'
+                    something_failed = True
                     break
                 else:
                     repo_results['status'] = 'ok'            
@@ -74,5 +99,10 @@ def update(basedir=None, logdir='.'):
             fx.write('    <td><a href="{}.log">{}</a></td>\n'.format(repo, results[repo]['status']))
             fx.write('  </tr>\n')
         fx.write('</table>\n</body>\n</html>\n')            
+
+    if something_failed:
+        print("Updates+tests failed at {}".format(time.asctime()))
+        for repo in repos:
+            print("{:12s} {}".format(repo, results[repo]['status']))
 
     return results
