@@ -37,6 +37,7 @@ def update(basedir=None, logdir='.', repos=None):
 
     something_failed = False
     for repo in repos:
+        t0 = time.time()
         repo_results = dict()
         repodir = os.path.join(basedir, repo, 'master')
         if not os.path.exists(repodir):
@@ -56,6 +57,11 @@ def update(basedir=None, logdir='.', repos=None):
             #- desimodel: also update svn data
             if repo == 'desimodel':
                 commands = ['svn update data/',] + commands
+
+            #- specsim: python code not under py/
+            if repo == 'specsim':
+                i = commands.index('python -m compileall -f ./py')
+                commands[i] = 'python -m compileall -f specsim'
 
             #- desisim-testdata: data only, no tests
             if repo == 'desisim-testdata':
@@ -79,6 +85,7 @@ def update(basedir=None, logdir='.', repos=None):
                 else:
                     repo_results['status'] = 'ok'            
 
+        repo_results['time'] = time.time() - t0
         repo_results['log'] = '\n'.join(repo_results['log'])
         results[repo] = repo_results
         ### print('{:20s}  {}'.format(repo, results[repo]['status']))
@@ -97,8 +104,11 @@ def update(basedir=None, logdir='.', repos=None):
             fx.write('  <tr>\n')
             fx.write('    <td>{}</td>\n'.format(repo))
             fx.write('    <td><a href="{}.log">{}</a></td>\n'.format(repo, results[repo]['status']))
+            dt = int(results[repo]['time'])
+            timestr = '{:02d}:{:02d}'.format(dt//60, dt%60)
+            fx.write('    <td>{}</td>\n'.format(timestr))
             fx.write('  </tr>\n')
-        fx.write('</table>\n</body>\n</html>\n')            
+        fx.write('</table>\n</body>\n</html>\n')
 
     if something_failed:
         print("Updates+tests failed at {}".format(time.asctime()))
