@@ -33,6 +33,10 @@ def update(basedir=None, logdir='.', repos=None):
             'specsim',
             'desisim-testdata',
             'desisim',
+            'desisurvey',
+            'surveysim',
+            'redrock',
+            'redrock-templates',
         ]
 
     something_failed = False
@@ -63,8 +67,8 @@ def update(basedir=None, logdir='.', repos=None):
                 i = commands.index('python -m compileall -f ./py')
                 commands[i] = 'python -m compileall -f specsim'
 
-            #- desisim-testdata: data only, no tests
-            if repo == 'desisim-testdata':
+            #- desisim-testdata & redrock-templates: data only, no tests
+            if repo in ['desisim-testdata', 'redrock-templates']:
                 commands = ['git pull', ]
 
             #- desisim: use desisim-testdata to run faster
@@ -73,11 +77,16 @@ def update(basedir=None, logdir='.', repos=None):
                 commands[i] = 'module load desisim-testdata && python setup.py test'
 
             for cmd in commands:
-                # x = subprocess.run(cmd.split(), stdout=subprocess.PIPE,
-                #         stderr=subprocess.STDOUT, universal_newlines=True)
                 x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, universal_newlines=True)
                 repo_results['log'].extend( ['--- '+cmd, x.stdout] )
+
+                if cmd == "git pull":
+                    if "Already up-to-date." in x.stdout:
+                        repo_results['updated'] = False
+                    else:
+                        repo_results['updated'] = True
+
                 if x.returncode != 0:
                     repo_results['status'] = 'FAIL'
                     something_failed = True
@@ -100,9 +109,17 @@ def update(basedir=None, logdir='.', repos=None):
         fx.write('<html>\n<body>\n')
         fx.write('<h1>Updated {}</h1>\n'.format(time.asctime()))
         fx.write('<table>\n')
+        fx.write('  <tr>\n')
+        fx.write('    <th>Repo</th><th>Updated</th><th>Status</th><th>Time</th>\n')
+        fx.write('  </tr>\n')
         for repo in repos:
             fx.write('  <tr>\n')
             fx.write('    <td>{}</td>\n'.format(repo))
+            if results[repo]['updated']:
+                fx.write('    <td>yes</td>\n')
+            else:
+                fx.write('    <td></td>\n')
+
             fx.write('    <td><a href="{}.log">{}</a></td>\n'.format(repo, results[repo]['status']))
             dt = int(results[repo]['time'])
             timestr = '{:02d}:{:02d}'.format(dt//60, dt%60)
@@ -112,7 +129,11 @@ def update(basedir=None, logdir='.', repos=None):
 
     if something_failed:
         print("Updates+tests failed at {}".format(time.asctime()))
-        for repo in repos:
-            print("{:12s} {}".format(repo, results[repo]['status']))
+    else:
+        print("Updates+tests succeeded at {}".format(time.asctime()))
+
+    for repo in repos:
+        updated = 'updated' if results[repo]['updated'] else 'same'
+        print("{:12s} {:8s} {}".format(repo, updated, results[repo]['status']))
 
     return results

@@ -6,7 +6,7 @@
 #PBS -j oe
 
 #- Cron/batch job to run daily integration tests on edison.nersc.gov
-### 0 1 * * * /bin/bash -lc "source /scratch1/scratchdirs/desi/sjb/desi/code/desitest/etc/cron_dailyupdate.sh"
+### 0 1 * * * /bin/bash -lc "source /scratch1/scratchdirs/dailytest/code/desitest/etc/cron_dailyupdate.sh"
 
 #- Figure out where we are before modules changes ${BASH_SOURCE[0]} (!)
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -18,23 +18,16 @@ echo `date` Running dailyupdate on `hostname`
 #- Configure desi environment if needed
 if [ -z "$DESI_ROOT" ]; then
     module use /global/common/$NERSC_HOST/contrib/desi/modulefiles
-    module load desimodules
+    module load desimodules/master
 fi
-
-#- switch to master versions of everything
-module switch desiutil/master
-module switch specter/master
-module switch desimodel/master
-module switch desitarget/master
-module switch desispec/master
-module switch specsim/master
-module switch desisim/master
 
 #--------------------------------------------------------------------
 #- Update from git and run unit tests
 cd $PYDIR
 logdir=/project/projectdirs/desi/www/users/desitest/log/dailytest
 python -c "from desitest.nersc import update; update(logdir='$logdir')"
+
+echo http://portal.nersc.gov/project/desi/users/desitest/log/dailytest/
 
 #--------------------------------------------------------------------
 #- Run integration test
