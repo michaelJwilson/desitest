@@ -47,6 +47,7 @@ def update(basedir=None, logdir='.', repos=None):
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
             repo_results['log'] = 'Missing directory {}'.format(repodir)
+            repo_results['updated'] = False
         else:
             os.chdir(repodir)
             repo_results['log'] = ['--- {}'.format(repodir), '']
@@ -75,7 +76,7 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'desisim':
                 i = commands.index('python setup.py test')
                 commands[i] = 'module load desisim-testdata && python setup.py test'
-
+            assert "git pull" in commands
             for cmd in commands:
                 x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, universal_newlines=True)

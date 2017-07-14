@@ -21,13 +21,19 @@ if [ -z "$DESI_ROOT" ]; then
     module load desimodules/master
 fi
 
+#- Check if subversion needs to be loaded
+if [[ $(which svn) == "/usr/common/software/bin/svn" || $(which svn) == "/usr/bin/svn" ]]; then
+    module load subversion
+fi
+echo Using svn $(which svn)
+
 #--------------------------------------------------------------------
 #- Update from git and run unit tests
 cd $PYDIR
-logdir=/project/projectdirs/desi/www/users/desitest/log/dailytest
+logdir=/project/projectdirs/desi/www/users/desitest/log/dailytest/$NERSC_HOST
 python -c "from desitest.nersc import update; update(logdir='$logdir')"
 
-echo http://portal.nersc.gov/project/desi/users/desitest/log/dailytest/
+echo http://portal.nersc.gov/project/desi/users/desitest/log/dailytest/$NERSC_HOST
 
 #--------------------------------------------------------------------
 #- Run integration test
@@ -56,7 +62,7 @@ outdir=$DESI_SPECTRO_REDUX/$PRODNAME
 rm -rf $simdir
 rm -rf $outdir
 
-#- Run the test
+#- Run the integration test
 mkdir -p $simdir
 mkdir -p $outdir
 # python -m desispec.test.integration_test > $outdir/dailytest.log
