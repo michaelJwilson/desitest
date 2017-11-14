@@ -10,7 +10,8 @@ import time
 def update(basedir=None, logdir='.', repos=None):
     '''TODO: Document'''
     if basedir is None:
-        basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
+        ### basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
+        basedir = '/global/common/{}/contrib/desi/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
 
     if not os.path.exists(basedir):
         raise ValueError("Missing directory {}".format(basedir))
