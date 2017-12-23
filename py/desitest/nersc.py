@@ -38,6 +38,7 @@ def update(basedir=None, logdir='.', repos=None):
             'surveysim',
             'redrock',
             'redrock-templates',
+            'simqso',
         ]
 
     something_failed = False
@@ -77,6 +78,14 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'desisim':
                 i = commands.index('python setup.py test')
                 commands[i] = 'module load desisim-testdata && python setup.py test'
+
+            #- simqso: no py/ subdir; no tests
+            if repo == 'simqso':
+                commands = [
+                    "git pull",
+                    "python -m compileall -f simqso",
+                    ]
+
             assert "git pull" in commands
             for cmd in commands:
                 x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,

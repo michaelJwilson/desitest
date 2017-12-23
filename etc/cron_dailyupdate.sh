@@ -18,7 +18,7 @@ echo `date` Running dailyupdate on `hostname`
 #- Configure desi environment if needed
 if [ -z "$DESI_ROOT" ]; then
     # module use /global/common/$NERSC_HOST/contrib/desi/modulefiles
-    module use /global/common/$NERSC_HOST/contrib/desi/desiconda/current/modulefiles
+    module use /global/common/$NERSC_HOST/contrib/desi/desiconda/startup/modulefiles
     module load desimodules/master
 fi
 
