@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+
+"""
+Timing tests of DESI code at NERSC
+
+Stephen Bailey
+January 2018
+"""
+
+from __future__ import absolute_import, division, print_function
+import sys, os, socket, time, datetime, subprocess
+import numpy as np
+
+#-------------------------------------------------------------------------
+#- Import DESI packages to establish versions
+import desiutil, desispec, desisim, desitarget, desimodel, redrock, specsim
+import desiutil.depend
+
+import argparse
+parser = argparse.ArgumentParser(usage = "{prog} [options]")
+parser.add_argument("-o", "--output", type=str,  help="output yaml file")
+parser.add_argument("--dryrun", action="store_true", help="print commands but don't run them")
+args = parser.parse_args()
+
+#- Add code versions, hostnames, etc.
+meta = dict()
+meta['code_version'] = dict(speedtest='0.1.1')
+
+tmp = dict()
+desiutil.depend.add_dependencies(tmp)
+for key, value in desiutil.depend.iterdep(tmp):
+    meta['code_version'][key] = value
+
+meta['python_distribution'] = sys.version.split('|')[1]
+meta['nersc_host'] = os.getenv('NERSC_HOST')
+meta['datetime'] = datetime.datetime.now().isoformat()
+
+if meta['nersc_host'] == 'edison':
+    meta['cpu'] = 'IvyBridge'
+    srun = 'srun -n 24 -c 2'
+    ncores = 24
+elif meta['nersc_host'] == 'cori':
+    if os.cpu_count() > 64:
+        meta['cpu'] = 'KNL'
+        srun = 'srun -n 68 -c 4'
+        ncores = 68
+    else:
+        meta['cpu'] = 'Haswell'
+        srun = 'srun -n 32 -c 2'
+        ncores = 32 
+else:
+    meta['cpu'] = 'Unknown'
+
+meta['hostname'] = socket.gethostname()
+meta['command'] = ' '.join(sys.argv)
+meta['exec_prefix'] = sys.exec_prefix
+if args.output:
+    meta['run_name'] = os.path.splitext(os.path.basename(args.output))[0]
+
+#-------------------------------------------------------------------------
+#- Utility functions / classes
+import tempfile, shutil, contextlib
+
+@contextlib.contextmanager
+def get_tempdir():
+    tempdir = tempfile.mkdtemp()
+    yield tempdir
+    if os.path.exists(tempdir):
+        print('removing {}'.format(tempdir))
+        shutil.rmtree(tempdir)
+
+def timeit(cmd, dryrun=False):
+    print('>>> {}'.format(cmd))
+    t0 = time.time()
+    if not dryrun:
+        subprocess.call(cmd.split())
+    dt = time.time() - t0
+    print('... {} took {:.1f} seconds'.format(cmd.split()[0], dt))
+    return dt
+
+#-------------------------------------------------------------------------
+#- run the timing tests
+
+timing = dict()
+commands = dict()
+bindir = os.path.abspath(os.path.split(sys.argv[0])[0])
+datadir = os.path.abspath(bindir + '/../data')
+assert os.path.exists(datadir)
+
+with get_tempdir() as outdir:
+
+    #- pixsim
+    cmd = 'pixsim --simspec {}/simspec-00003578.fits'.format(datadir)
+    cmd += ' --rawfile {}/desi-00003878.fits.fz'.format(outdir)
+    cmd += ' --cameras r0 '
+    commands['pixsim'] = cmd
+    timing['pixsim'] = timeit(cmd, args.dryrun)
+
+    #- extract
+    cmd = srun + ' desi_extract_spectra --mpi '
+    cmd += '-i {}/pix-r0-00003578.fits'.format(datadir)
+    cmd += ' -f {}/fibermap-00003578.fits'.format(datadir)
+    cmd += ' -p {}/psfnight-r0.fits'.format(datadir)
+    cmd += ' -o {}/frame-r0-00003578.fits'.format(outdir)
+    # cmd += ' --nspec 500 -w 6000,7000,1'
+    commands['extract'] = cmd
+    timing['extract'] = timeit(cmd, args.dryrun)
+
+    #- PSF fitting
+    os.environ['OMP_NUM_THREADS'] = str(ncores)
+    os.environ['SPECEXDATA'] = os.getenv('SPECEX')+'/data'
+    cmd = 'desi_psf_fit'
+    cmd += ' --arc {}/pix-r0-00003571.fits'.format(datadir)
+    cmd += ' --in-psf {}/psfboot-r0.fits'.format(datadir)
+    cmd += ' --out-psf {}/psf-r0-00003571.fits'.format(outdir)
+    commands['psf'] = cmd
+    timing['psf'] = timeit(cmd, args.dryrun)
+
+    #- Redrock
+    os.environ['OMP_NUM_THREADS'] = '1'
+    cmd = 'rrdesi {}/spectra-64-5292.fits'.format(datadir)
+    cmd += ' -o {}/zbest-64-5292.fits'.format(outdir)
+    commands['redrock'] = cmd
+    timing['redrock'] = timeit(cmd, args.dryrun)
+
+
+#-------------------------------------------------------------------------
+#- output results
+import yaml
+results = dict(meta=meta, commands=commands, timing=timing) 
+print('-----------------------------------------------------------------')
+print(yaml.dump(results, default_flow_style=False))
+
+if args.output:
+    with open(args.output, 'w') as fx:
+        fx.write(yaml.dump(results, default_flow_style=False))
+
+
+
+
