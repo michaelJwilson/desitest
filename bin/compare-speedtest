@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+"""
+Compare timing results from different speedtest runs
+"""
+
+from __future__ import absolute_import, division, print_function
+import sys, os
+from collections import OrderedDict
+import numpy as np
+import yaml
+import matplotlib.pyplot as plt
+
+#- Read input timing results
+results = OrderedDict()
+for infile in sys.argv[1:]:
+    name = os.path.splitext(os.path.basename(infile))[0]
+    with open(infile) as fx:
+        results[name] = yaml.load(fx)
+
+steps = ['pixsim', 'extract', 'psf', 'redrock']
+names = list(results.keys())
+dy = 1.0 / (len(results) + 1)
+for i, name in enumerate(names):
+    y = np.arange(len(steps)) + i*dy
+    x = [results[name]['timing'][s] for s in steps]
+    plt.barh(y, x, height=dy, label=name)
+    
+    if i != 0:
+        for j, stepname in enumerate(steps):
+            t0 = results[names[0]]['timing'][stepname]
+            t1 = results[names[i]]['timing'][stepname]
+            plt.text(t1+30, j+i*dy, '{:.1f}x'.format(t1/t0),
+                verticalalignment='center')
+            
+plt.yticks(np.arange(len(steps)), steps)
+plt.xlabel('Runtime [seconds]')
+plt.legend()
+plt.title('DESI Timing Comparisons')
+
+plt.savefig('speedtest.pdf')
+plt.show()
