@@ -93,7 +93,7 @@ def update(basedir=None, logdir='.', repos=None):
                 repo_results['log'].extend( ['--- '+cmd, x.stdout] )
 
                 if cmd == "git pull":
-                    if "Already up-to-date." in x.stdout:
+                    if "Already up to date." in x.stdout:
                         repo_results['updated'] = False
                     else:
                         repo_results['updated'] = True
