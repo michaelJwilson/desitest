@@ -11,7 +11,8 @@ def update(basedir=None, logdir='.', repos=None):
     '''TODO: Document'''
     if basedir is None:
         ### basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
-        basedir = '/global/common/{}/contrib/desi/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
+        ### basedir = '/global/common/{}/contrib/desi/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
+        basedir = '/global/common/software/desi/{}/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
 
     if not os.path.exists(basedir):
         raise ValueError("Missing directory {}".format(basedir))
@@ -46,6 +47,7 @@ def update(basedir=None, logdir='.', repos=None):
         t0 = time.time()
         repo_results = dict()
         repodir = os.path.join(basedir, repo, 'master')
+        repo_results['updated'] = False
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
             repo_results['log'] = 'Missing directory {}'.format(repodir)
