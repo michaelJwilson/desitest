@@ -24,10 +24,12 @@ if [ -z "$DESI_ROOT" ]; then
 fi
 
 #- Check if subversion needs to be loaded
-if [[ $(which svn) == "/usr/common/software/bin/svn" || $(which svn) == "/usr/bin/svn" ]]; then
-    module load subversion/1.9.4
-fi
-echo Using svn $(which svn)
+#- Update 2018-04-12: no longer needed, but leaving code in case we need to
+#- re-implement this logic later for another svn update.
+# if [[ $(which svn) == "/usr/common/software/bin/svn" || $(which svn) == "/usr/bin/svn" ]]; then
+#     module load subversion/1.9.4
+# fi
+# echo Using svn $(which svn)
 
 #--------------------------------------------------------------------
 #- Update from git and run unit tests
