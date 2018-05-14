@@ -40,6 +40,7 @@ def update(basedir=None, logdir='.', repos=None):
             'redrock',
             'redrock-templates',
             'simqso',
+            'fiberassign',
         ]
 
     something_failed = False
@@ -62,6 +63,10 @@ def update(basedir=None, logdir='.', repos=None):
             ]
             
             #- special cases for commands
+
+            #- fiberassign: compiled code
+            if repo == 'fiberassign':
+                commands = ['git pull', 'make install']
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
