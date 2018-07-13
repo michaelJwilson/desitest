@@ -12,7 +12,8 @@ def update(basedir=None, logdir='.', repos=None):
     if basedir is None:
         ### basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
         ### basedir = '/global/common/{}/contrib/desi/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
-        basedir = '/global/common/software/desi/{}/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
+        ### basedir = '/global/common/software/desi/{}/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
+        basedir = os.path.normpath(os.getenv('DESICONDA') + '/../code')
 
     if not os.path.exists(basedir):
         raise ValueError("Missing directory {}".format(basedir))

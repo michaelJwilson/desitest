@@ -38,6 +38,7 @@ logdir=/project/projectdirs/desi/www/users/desitest/log/dailytest/$NERSC_HOST
 python -c "from desitest.nersc import update; update(logdir='$logdir')"
 
 echo http://portal.nersc.gov/project/desi/users/desitest/log/dailytest/$NERSC_HOST
+echo
 
 #--------------------------------------------------------------------
 #- Run integration test
